@@ -1,2 +1,2 @@
-# AndroidTVCameraStreaming-Server
-The server application from the AndroidTVCameraStreaming app.
+# AndroidCamStream-Server
+The server application for the AndroidCamStream app.
