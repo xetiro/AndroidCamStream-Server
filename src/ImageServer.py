@@ -88,9 +88,10 @@ def disconnect(sid):
     activeSessions.pop(sid, None)
     print(activeSessions)
     if(isDisplay):
-        # Avoids to keep a freezing window in case you used the display method
+        # Workoaround to avoid a zombie window in case you used the display method
         cv2.waitKey(5)
         cv2.destroyAllWindows()
+        cv2.waitKey(1)
 
 def displayImage(username, imageBytes):
     # Decode image from bytes
