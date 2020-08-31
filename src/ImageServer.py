@@ -28,9 +28,49 @@ app = socketio.WSGIApp(sio)
 ip = "0.0.0.0" 
 port = 8080
 
+# Display the image on a OpenCV window
+isDisplay = False
+
+# Use authentication to validate users
+isAuth = False
+
+# Dummy in-memory key-value pairs user database for dummy authentication using 
+# plain-text passwords. Users credentials are username:password key-values
+# WARNING: Never use plain-text passwords on a real application.
+dummyUserDB = { 
+
+    # Add more users as needed
+    "user1": "pass1",
+    "user2": "pass2",
+    "Alice": "123",
+    "Bob": "456"
+    
+}
+
+# Map authenticated sessions id with usernames for display reasons
+activeSessions = {}
+
 @sio.event
 def connect(sid, environ):
     print('connect', sid)
+    print(activeSessions)
+
+# Method used for user "dummy" authentication using an in-memory dummy database. 
+# This can be used to authenticate the user with other server/service.
+# WARNING: never use plain-text passwords on a real application.
+@sio.event
+def authenticate(sid, username, password, clientCallbackEvent):
+    user = dummyUserDB.get(username)
+    if isAuth == False or (user is not None and user == password):
+        # add username to the session
+        activeSessions[sid] = username
+        sio.emit(clientCallbackEvent, True)
+        print("User [" + username +"] authenticated.")
+    else:
+        sio.emit(clientCallbackEvent, False)
+        sio.sleep(1)
+        sio.disconnect(sid)
+        print("User [" + username +"] authentication failed.")
 
 # This is the main method that the client calls when streaming the pictures to 
 # the server. Each receiveImage event is already processed in a new thread.
@@ -38,27 +78,33 @@ def connect(sid, environ):
 # received in python as Bytes.
 @sio.event
 def receiveImage(sid, imageBytes):
-    # Process the image
+    # Process the image here or send image to another server here
     print(len(imageBytes))
-    display(sid, bytes(imageBytes))
+    if(isDisplay):
+        display(activeSessions[sid], bytes(imageBytes))
 
 @sio.event
 def disconnect(sid):
     print('disconnect', sid)
-    # Avoids to keep a freezing window in case you used the show method
-    cv2.destroyAllWindows()
+    activeSessions.pop(sid, None)
+    print(activeSessions)
+    if(isDisplay):
+        # Avoids to keep a freezing window in case you used the show method
+        cv2.destroyAllWindows()
 
-def display(sid, imageBytes):
+def showImage(username, imageBytes):
+    # Decode image from bytes
     nparr = np.frombuffer(imageBytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    cv2.imshow("Image Stream from " + sid, img)
+    # Show image after decoded
+    cv2.imshow("Image Stream from " + username, img)
     cv2.waitKey(1)
 
 def executeCommandArgs(argv):
-    global ip, port
+    global ip, port, isDisplay, isAuth
     scriptName = argv[0]
     try:
-        opts, args = getopt.getopt(argv[1:], "hi:p:", ["ip=", "port="])
+        opts, args = getopt.getopt(argv[1:], "adhi:p:", ["ip=", "port=", "display", "auth"])
     except getopt.GetoptError: # wrong commands
         print(scriptName + " -i <server_ip> -p <server_port>")
         sys.exit(2)
@@ -71,6 +117,10 @@ def executeCommandArgs(argv):
             ip = arg
         elif opt in ("-p", "--port"):
             port = int(arg)
+        elif opt in ("-d", "--display"):
+            isDisplay = True
+        elif opt in ("-a", "--auth"):
+            isAuth = True
 
 if __name__ == '__main__':
     executeCommandArgs(sys.argv)
