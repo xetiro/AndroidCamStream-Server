@@ -1,5 +1,14 @@
-# This is a simple testing server to receive stream of pictures from
-# the AndroidTVCameraToServer app. 
+# This is a simple prototype server to receive stream of pictures from the 
+# AndroidCamStream client app.
+# 
+# This server is implemented with the socket.io framework that provides a
+# easy-to-use of WebSockets. Therefore, this is a SYNCHRONOUS client/server.
+# 
+# PLEASE NOTICE: 
+# The choice of synch client/server was intended for quick prototyping. However, 
+# due to the nature of the video-streaming use-case a more robust implementation
+# based on ASYNCHRONOUS client/server communication is strongly recommended. 
+# Socket.io also provides an asynch server API.
 #
 # Created by xetiro (aka Ruben Geraldes) on 28/09/2020.
 import sys, getopt
@@ -31,17 +40,17 @@ def connect(sid, environ):
 def receiveImage(sid, imageBytes):
     # Process the image
     print(len(imageBytes))
-    show(sid, imageBytes)
+    display(sid, bytes(imageBytes))
 
 @sio.event
 def disconnect(sid):
     print('disconnect', sid)
     # Avoids to keep a freezing window in case you used the show method
-    cv2.destroyAllWindows
+    cv2.destroyAllWindows()
 
-def show(sid, imageBytes):
+def display(sid, imageBytes):
     nparr = np.frombuffer(imageBytes, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR) # cv2.IMREAD_COLOR in OpenCV 3.1
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     cv2.imshow("Image Stream from " + sid, img)
     cv2.waitKey(1)
 
