@@ -81,7 +81,7 @@ def receiveImage(sid, imageBytes):
     # Process the image here or send image to another server here
     print(len(imageBytes))
     if(isDisplay):
-        display(activeSessions[sid], bytes(imageBytes))
+        displayImage(activeSessions[sid], bytes(imageBytes))
 
 @sio.event
 def disconnect(sid):
@@ -92,7 +92,7 @@ def disconnect(sid):
         # Avoids to keep a freezing window in case you used the show method
         cv2.destroyAllWindows()
 
-def showImage(username, imageBytes):
+def displayImage(username, imageBytes):
     # Decode image from bytes
     nparr = np.frombuffer(imageBytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
