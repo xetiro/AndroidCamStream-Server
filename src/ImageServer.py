@@ -78,8 +78,7 @@ def authenticate(sid, username, password, clientCallbackEvent):
 # received in python as Bytes.
 @sio.event
 def receiveImage(sid, imageBytes):
-    # Process the image here or send image to another server here
-    print(len(imageBytes))
+    # HINT: Process the image here or send image to another server here
     if(isDisplay):
         displayImage(activeSessions[sid], bytes(imageBytes))
 
@@ -89,7 +88,8 @@ def disconnect(sid):
     activeSessions.pop(sid, None)
     print(activeSessions)
     if(isDisplay):
-        # Avoids to keep a freezing window in case you used the show method
+        # Avoids to keep a freezing window in case you used the display method
+        cv2.waitKey(5)
         cv2.destroyAllWindows()
 
 def displayImage(username, imageBytes):
