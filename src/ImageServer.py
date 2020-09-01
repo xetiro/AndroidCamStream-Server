@@ -88,7 +88,7 @@ def disconnect(sid):
     deleteUserSession(sid)
     print(activeUsers)
     if isDisplay:
-        cv2.destroyAllWindows # Doesn't work well in Unix environments = Zombie window
+        cv2.destroyAllWindows() # Doesn't work well in Unix environments = Zombie window
         cv2.waitKey(1)
 
 def addUserSession(sid, username):
