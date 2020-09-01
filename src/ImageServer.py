@@ -38,22 +38,22 @@ isAuth = False
 # plain-text passwords. Users credentials are username:password key-values
 # WARNING: Never use plain-text passwords on a real application.
 dummyUserDB = { 
-
     # Add more users as needed
     "user1": "pass1",
     "user2": "pass2",
     "Alice": "123",
     "Bob": "456"
-    
 }
 
-# Map authenticated sessions id with usernames for display reasons
+# Map of authenticated session id's and respective usernames
 activeSessions = {}
+# Map of authenticated usernames and respective session id's
+activeUsers = {}
 
 @sio.event
 def connect(sid, environ):
     print('connect', sid)
-    print(activeSessions)
+    print(activeUsers)
 
 # Method used for user "dummy" authentication using an in-memory dummy database. 
 # This can be used to authenticate the user with other server/service.
@@ -63,12 +63,12 @@ def authenticate(sid, username, password, clientCallbackEvent):
     user = dummyUserDB.get(username)
     if isAuth == False or (user is not None and user == password):
         # add username to the session
-        activeSessions[sid] = username
+        addUserSession(sid, username)
         sio.emit(clientCallbackEvent, True)
         print("User [" + username +"] authenticated.")
     else:
         sio.emit(clientCallbackEvent, False)
-        sio.sleep(1)
+        sio.sleep(2) # give time to the socket emit the callback to the user
         sio.disconnect(sid)
         print("User [" + username +"] authentication failed.")
 
@@ -85,20 +85,28 @@ def receiveImage(sid, imageBytes):
 @sio.event
 def disconnect(sid):
     print('disconnect', sid)
-    activeSessions.pop(sid, None)
-    print(activeSessions)
-    if(isDisplay):
-        # Workoaround to avoid a zombie window in case you used the display method
-        cv2.waitKey(5)
-        cv2.destroyAllWindows()
+    deleteUserSession(sid)
+    print(activeUsers)
+    if isDisplay:
+        cv2.destroyAllWindows # Doesn't work well in Unix environments = Zombie window
         cv2.waitKey(1)
+
+def addUserSession(sid, username):
+    activeSessions[sid] = username
+    activeUsers[username] = sid
+
+def deleteUserSession(sid):
+    username = activeSessions[sid]
+    activeSessions.pop(sid, None)
+    activeUsers.pop(username, None)
 
 def displayImage(username, imageBytes):
     # Decode image from bytes
     nparr = np.frombuffer(imageBytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     # Show image after decoded
-    cv2.imshow("Image Stream from " + username, img)
+    cv2.namedWindow(username, cv2.WINDOW_AUTOSIZE)
+    cv2.imshow(username, img)
     cv2.waitKey(1)
 
 def executeCommandArgs(argv):
